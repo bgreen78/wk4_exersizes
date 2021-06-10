@@ -95,14 +95,76 @@ These exercises will reiterate what you learned in the "Mapping data with R" tut
 ### Starbucks locations (`ggmap`)
 
   1. Add the `Starbucks` locations to a world map. Add an aesthetic to the world map that sets the color of the points according to the ownership type. What, if anything, can you deduce from this visualization?  
+  
+```{r}
+world <- get_stamenmap(
+    bbox = c(left = -180, bottom = -57, right = 179, top = 82.1), 
+    maptype = "terrain",
+    zoom = 2)
 
-  2. Construct a new map of Starbucks locations in the Twin Cities metro area (approximately the 5 county metro area).  
+ggmap(world) + 
+  geom_point(data = Starbucks, 
+             aes(x = Longitude, y = Latitude, color = `Ownership Type`), 
+             alpha = .3, 
+             size = .1) +
+  theme_map() +
+  theme(legend.background = element_blank()) +
+  labs(title = "Starbucks Locations and Ownership Types Around the World")
+```
+
+**Interpretation**: Some parts of the world (like Japan) have a lot more joint ventures or specific ownership types. This probably has something to do with laws about franchises in different countries. FINISH
+
+  2. Construct a new map of Starbucks locations in the Twin Cities metro area (approximately the 5 county metro area). 
+  
+```{r}
+#I'm not exactly sure what the 5 county metro area is, so I made my best guess
+Twin_cities <- get_stamenmap(
+    bbox = c(left = -93.7, bottom = 44.7, right = -92.7, top = 45.3), 
+    maptype = "terrain",
+    zoom = 10)
+
+ggmap(Twin_cities) + 
+  geom_point(data = Starbucks, 
+             aes(x = Longitude, y = Latitude, color = `Ownership Type`), 
+             alpha = .5, 
+             size = 1) +
+  theme_map() +
+  theme(legend.position = "right") +
+  labs(title = "Starbucks Locations and Ownership Type in the Twin Cities Metro Area")
+```
+
 
   3. In the Twin Cities plot, play with the zoom number. What does it do?  (just describe what it does - don't actually include more than one map).  
+  
+**Description**: Increasing the zoom adds a lot more detail on streets, names of places, and geography, but it takes much longer to load. Decreasing the zoom makes it blurry and not as detailed.
 
   4. Try a couple different map types (see `get_stamenmap()` in help and look at `maptype`). Include a map with one of the other map types.  
 
+```{r}
+Twin_cities <- get_stamenmap(
+    bbox = c(left = -93.7, bottom = 44.7, right = -92.7, top = 45.3), 
+    maptype = "toner",
+    zoom = 10)
+
+ggmap(Twin_cities) +
+  labs(title = "Toner Style Map of the Twin Cities", y = "Latitude", x = "Longitude")
+```
+
+
   5. Add a point to the map that indicates Macalester College and label it appropriately. There are many ways you can do think, but I think it's easiest with the `annotate()` function (see `ggplot2` cheatsheet).
+
+```{r}
+Twin_cities <- get_stamenmap(
+    bbox = c(left = -93.7, bottom = 44.7, right = -92.7, top = 45.3), 
+    maptype = "terrain",
+    zoom = 10)
+
+ggmap(Twin_cities)+
+  annotate("point", x=-93.17123, y=44.93790, color = "red") +
+  annotate("text", x=-93.17123, y=44.92790, color = "black",
+           size=2, label = "Macalester College") +
+  labs(title = "Location of Macalester College in the Twin Cities", y = "Latitude", x = "Longitude")
+```
 
 ### Choropleth maps with Starbucks data (`geom_map()`)
 
@@ -123,7 +185,33 @@ starbucks_with_2018_pop_est <-
 
   6. **`dplyr` review**: Look through the code above and describe what each line of code does.
 
+**Review:** First you read in the data from dropbox and assigned it to the name census_pop_est_2018. Then you separated the state variable to get isolate the "." in front of each name, selected for everything except the ".", and then mutated the state variable to make the state names all lowercase. Then you left joined this modified census_pop_est_2018 to the Starbucks data by state (the names of the state variables were different, so you had to specify that state_name = state). Finally you added a column with the number of starbucks in each state divided by the state population times 10000. This all got saved to a new table named starbucks_with_2018_pop_est. 
+
   7. Create a choropleth map that shows the number of Starbucks per 10,000 people on a map of the US. Use a new fill color, add points for all Starbucks in the US (except Hawaii and Alaska), add an informative title for the plot, and include a caption that says who created the plot (you!). Make a conclusion about what you observe.
+
+```{r}
+states_map <- map_data("state")
+
+starbucks_with_2018_pop_est %>% 
+  ggplot() +
+  geom_map(map = states_map,
+           aes(map_id = state_name,
+               fill = starbucks_per_10000)) +
+  geom_point(data = Starbucks %>% filter(Country == "US" & `State/Province` !="AK" & `State/Province` !="HI"),
+             aes(x = Longitude, y = Latitude),
+             size = .05,
+             alpha = .2, 
+             color = "goldenrod") +
+  expand_limits(x = states_map$long, y = states_map$lat) + 
+  labs(title = "Starbucks Locations and State Proportions of Starbucks per 10,000 Citizens",
+       caption = "Plot by Bea Green",
+       fill = "") +
+  scale_fill_viridis_c(option= "mako") +
+  theme_map() +
+  theme(legend.background = element_blank())
+```
+
+**Conclusions**: From this I conclude that while it looks like there are a lot of starbucks on the east coast, actually compared to the population of those states there are many more on the west coast. Unsurprisingly, the highest starbucks to person ratio in the US is in Washington state. FINISH
 
 ### A few of your favorite things (`leaflet`)
 
