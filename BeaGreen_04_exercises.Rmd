@@ -224,6 +224,41 @@ starbucks_with_2018_pop_est %>%
   * Connect all your locations together with a line in a meaningful way (you may need to order them differently in the original data).  
   
   * If there are other variables you want to add that could enhance your plot, do that now.  
+
+```{r}
+bea_favorite_plcs <- tibble(
+  place = c("Home", "Mill Garden Store", "Samurai Restaurant", "Ice Cream Stand",
+            "Lake Morey", "Friend's House", "Farm Way Store", "Indian Pond",
+            "Free Dirt", "Stargazing Field"),
+  long = c(-72.131676, -72.156368, -72.146685, -72.149484, 
+           -72.159692, -72.230463, -72.116286, -72.054637,
+           -72.124005, -72.122385),
+  lat = c(43.896003, 43.871968, 43.905040, 43.903950,
+          43.921137, 44.032146, 43.980569, 43.930951,
+          43.899657, 43.893588),
+  top_three = c("Top 3", "other", "other", "other",
+                "Top 3", "Top 3", "other", "other",
+                "other", "other"))
+  
+bea_pal <- colorFactor(palette = c("#4B0C88", "#9F63D9"), 
+               levels = c("Top 3", "other"))
+
+leaflet(bea_favorite_plcs) %>% 
+  addProviderTiles(providers$Esri.WorldTopoMap) %>% 
+  addPolylines(lng = ~long, 
+            lat = ~lat, 
+             color = "#E9BC31") %>% 
+  addCircles(radius = 10,
+             color = ~bea_pal(top_three),
+             opacity = 1,
+             label = ~paste(str_to_title(place))) %>% 
+  addLegend("topright",
+           pal = bea_pal,
+           values= ~top_three,
+           opacity = 1,
+           title = "Bea's Top Locations in the Upper Valley")
+```
+
   
 ## Revisiting old datasets
 
