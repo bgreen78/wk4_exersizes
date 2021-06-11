@@ -285,13 +285,54 @@ Stations<-read_csv("http://www.macalester.edu/~dshuman1/data/112/DC-Stations.csv
   9. Use the latitude and longitude variables in `Stations` to make a visualization of the total number of departures from each station in the `Trips` data. Use either color or size to show the variation in number of departures. This time, plot the points on top of a map. Use any of the mapping tools you'd like.
   
 ```{r}
+Wash_DC <- get_stamenmap(
+    bbox = c(left = -77.24, bottom = 38.79, right = -76.9, top = 39.13), 
+    maptype = "toner-lite",
+    zoom = 12)
 
+dept_loc<- Stations %>% 
+  summarize(name, lat, long) %>% 
+  left_join(Trips %>% summarize(sdate, sstation),
+            by = c("name" = "sstation")) %>% 
+  group_by(name) %>% 
+  summarize(departures = n(), lat, long) %>% 
+  distinct() 
+
+ggmap(Wash_DC) + 
+  geom_point(data = dept_loc, 
+             aes(x = long, y = lat, color = departures), 
+             alpha = .7, 
+             size = 1) +
+  theme_map() +
+  scale_color_gradient(low ="royalblue3", high = "firebrick1") +
+  theme(legend.position = "left",
+        plot.title.position = "plot") +
+  labs(title = "Departures from Bike Rental Stations in DC ")
 ```
   
   10. Only 14.4% of the trips in our data are carried out by casual users. Create a plot that shows which area(s) have stations with a much higher percentage of departures by casual users. What patterns do you notice? Also plot this on top of a map. I think it will be more clear what the patterns are.
   
 ```{r}
+cas_sta<- Stations %>% 
+  summarize(name, lat, long) %>% 
+  left_join(Trips %>% summarize(sdate, sstation, client),
+            by = c("name" = "sstation")) %>% 
+  group_by(name) %>% 
+  summarize(perc_casual = sum(ifelse(client == "Casual", 1, 0))/n()*100,
+            lat, long) %>%
+  distinct()
 
+ggmap(Wash_DC) + 
+  geom_point(data = cas_sta, 
+             aes(x = long, y = lat, color = perc_casual), 
+             alpha = .7, 
+             size = 1) +
+  theme_map() +
+  scale_color_gradient(low ="royalblue3", high = "firebrick1") +
+  theme(legend.position = "right",
+        plot.title.position = "plot") +
+  labs(title = "Percentage of Casual Users at Bike Rental Departure Stations in DC",
+       color = "Percent of Casual Users")
 ```
   
 ### COVID-19 data
