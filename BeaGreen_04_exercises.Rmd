@@ -12,7 +12,7 @@ output:
 
 
 ```{r setup, include=FALSE}
-#knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r libraries}
@@ -112,7 +112,7 @@ ggmap(world) +
   labs(title = "Starbucks Locations and Ownership Types Around the World")
 ```
 
-**Interpretation**: Some parts of the world (like Japan) have a lot more joint ventures or specific ownership types. This probably has something to do with laws about franchises in different countries. FINISH
+**Interpretation**: This map of Starbucks locations by Ownership type shows that there are some areas of the world where specific Ownership types are much more common. Some parts of the world (like Japan, Eastern Europe, Korea, and India) have a lot more joint ventures. This probably has something to do with laws about what types of franchises you can run, or are easier to run, in different countries.
 
   2. Construct a new map of Starbucks locations in the Twin Cities metro area (approximately the 5 county metro area). 
   
@@ -205,13 +205,14 @@ starbucks_with_2018_pop_est %>%
   expand_limits(x = states_map$long, y = states_map$lat) + 
   labs(title = "Starbucks Locations and State Proportions of Starbucks per 10,000 Citizens",
        caption = "Plot by Bea Green",
-       fill = "") +
+       fill = "Starbucks per 10,000 Citizens") +
   scale_fill_viridis_c(option= "mako") +
   theme_map() +
-  theme(legend.background = element_blank())
+  theme(legend.background = element_blank(),
+        legend.position = "bottom")
 ```
 
-**Conclusions**: From this I conclude that while it looks like there are a lot of starbucks on the east coast, actually compared to the population of those states there are many more on the west coast. Unsurprisingly, the highest starbucks to person ratio in the US is in Washington state. FINISH
+**Conclusions**: From this map I conclude that while the yellow markers showing Starbucks locations make it appear as if there are a lot of Starbucks on the east coast, compared to the population of those states there are many more Starbucks per person on the west coast. Unsurprisingly, the highest Starbucks to person ratio in the US is in Washington state, where Starbucks originated.
 
 ### A few of your favorite things (`leaflet`)
 
@@ -334,6 +335,9 @@ ggmap(Wash_DC) +
   labs(title = "Percentage of Casual Users at Bike Rental Departure Stations in DC",
        color = "Percent of Casual Users")
 ```
+ 
+ **Description**: In this map of bike departures you can see that areas with a higher percentage of casual users are in the downtown area, probably where all of the tourist attractions are, and in an area up to the Northeast. The further you get from downtown and by the Potomac River, the fewer casual users there are.
+ 
   
 ### COVID-19 data
 
@@ -355,7 +359,7 @@ ggplot(current_cases) +
   
 ```
 
-**Description**: FINISH
+**Description**: This map showing the current cumulative cases of Covid19 in each state is essentially just a population map of the United States because by counting the raw numbers, states with higher populations automatically will have higher numbers of cases. California, Texas, New York, and Florida all rank high, which are the most populous states in the country. This doesn't help us compare how the states dealt with Covid19 and what affect their different strategies had on cumulative case count. 
   
   12. Now add the population of each state to the dataset and color the states by most recent cumulative cases/10,000 people. See the code for doing this with the Starbucks data. You will need to make some modifications. 
   
@@ -411,24 +415,73 @@ leaflet(MplsStops) %>%
   addLegend(position = "bottomright",
             pal = sus_stops_pal, 
             values = ~problem,
-            title = "Police Stops in Minneapolis by Problem Type")
+            title = "2017 Police Stops in <br>Minneapolis by Problem Type")
 ```
 
   
   16. Save the folder from moodle called Minneapolis_Neighborhoods into your project/repository folder for this assignment. Make sure the folder is called Minneapolis_Neighborhoods. Use the code below to read in the data and make sure to **delete the `eval=FALSE`**. Although it looks like it only links to the .sph file, you need the entire folder of files to create the `mpls_nbhd` data set. These data contain information about the geometries of the Minneapolis neighborhoods. Using the `mpls_nbhd` dataset as the base file, join the `mpls_suspicious` and `MplsDemo` datasets to it by neighborhood (careful, they are named different things in the different files). Call this new dataset `mpls_all`.
 
-```{r, eval=FALSE}
+```{r}
 mpls_nbhd <- st_read("Minneapolis_Neighborhoods/Minneapolis_Neighborhoods.shp", quiet = TRUE)
+```
+
+```{r}
+mpls_all <- mpls_nbhd %>% 
+  left_join(mpls_suspicious,
+            by = c("BDNAME" = "neighborhood")) %>% 
+  left_join(MplsDemo,
+            by = c("BDNAME" = "neighborhood"))
 ```
 
   17. Use `leaflet` to create a map from the `mpls_all` data  that colors the neighborhoods by `prop_suspicious`. Display the neighborhood name as you scroll over it. Describe what you observe in the map.
   
+```{r}
+mpls_pal <- colorNumeric("inferno", 
+                     domain = mpls_all$perc_sus)
+
+leaflet(mpls_all) %>% 
+  addTiles() %>% 
+  addPolygons(fillColor = ~mpls_pal(perc_sus),
+              stroke = FALSE,
+              fillOpacity = .7,
+              label = ~paste(BDNAME)) %>% 
+  addLegend(position = "bottomleft",
+            pal = mpls_pal, 
+            values = ~perc_sus,
+            title = "2017 Percentage of Minneapolis<br>Police Stops for 'Suspicious Vehicle<br>or Person' by Neighborhood")
+```
+
+**Description**: This map showing the percentage of Police stops that were due to a "suspicious vehicle or person" in each Minneapolis neighborhood shows that whether the Police were stopping people due to traffic or suspicion has a lot to do with geography (and presumably social factors that underlie geography). There is a much higher percentage of suspicious stops in the Southeastern neighborhoods, for example over 90% of stops in Morris Park were due to suspicion. On the other hand, areas with lower suspicion stops (and therefore higher traffic stops) include generally the Northeastern part of the city.
+  
   18. Use `leaflet` to create a map of your own choosing. Come up with a question you want to try to answer and use the map to help answer that question. Describe what your map shows. 
   
+  
+**Question**: Are some parts of Minneapolis more heavily policed compared to their population? 
+```{r}
+mpls_extended <- mpls_all %>% 
+  mutate(stops_per_pop = stops/population)
+
+mpls_pal4 <- colorNumeric("inferno", 
+                     domain = mpls_extended$stops_per_pop)
+
+leaflet(mpls_extended) %>% 
+  addTiles() %>% 
+  addPolygons(fillColor = ~mpls_pal4(stops_per_pop),
+              stroke = FALSE,
+              fillOpacity = .7,
+              label = ~paste(BDNAME)) %>% 
+  addLegend(position = "bottomleft",
+            pal = mpls_pal4, 
+            values = ~stops_per_pop,
+            title = "2017 Minneapolis Police Stops <br> per Neighborhood Population")
+```
+
+**Description**: This map was really surprising! There is significant variation across neighborhoods for the number of stops per population, with the standout case being the Mid-City Industrial neighborhood where there were actually more police stops than there are residents! This raises a lot of questions for me about what is going on there. The higher number of stops per population in the downtown areas make slightly more sense as many people visit there for work or entertainment, but don't necessarily live there. Other neighborhoods with higher values may indicate some disparity of where police go and where they tend to stop people. Overall I was pretty surprised by just how high these numbers were: my scale shows that in just under half the neighborhoods (40/87), stops per population was at or over 0.1, indicating that at least 1 in 10 residents (or visitors) were stopped by the police in 2017.
   
 ## GitHub link
 
   19. Below, provide a link to your GitHub page with this set of Weekly Exercises. Specifically, if the name of the file is 04_exercises.Rmd, provide a link to the 04_exercises.md file, which is the one that will be most readable on GitHub.
 
+[Bea's 04 exersizes .md](https://github.com/bgreen78/wk4_exersizes/blob/main/BeaGreen_04_exercises.md)
 
 **DID YOU REMEMBER TO UNCOMMENT THE OPTIONS AT THE TOP?**
